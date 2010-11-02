@@ -1,4 +1,4 @@
-= Heroku Deploy
+= Heroku Release
 
 Simple RubyGem for tagging and deploying versioned releases of an application to Heroku with the ability to do rollbacks.
 
