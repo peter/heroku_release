@@ -1,0 +1,45 @@
+= Heroku Deploy
+
+Simple RubyGem for tagging and deploying versioned releases of an application to Heroku with the ability to do rollbacks.
+
+== Usage
+
+If you are using Bundler, add a gem dependency like this:
+
+ group :development, :test do
+   gem 'heroku_deploy', '~> version known to work'
+ end
+
+Require the Rake tasks in your Rakefile:
+
+ require 'heroku_deploy/tasks'
+
+You have a few configuration options. If you are using a Git remote other than "heroku" then you must configure that. You can choose to have the release version written to a file on deploy so you can check the version on the live server. Here is an example:
+
+ HerokuDeploy.config.heroku_remote = "production" # git remote for heroku, defaults to "heroku"
+ HerokuDeploy.config.version_file_path = "public/version"
+
+To deploy the master branch to production, use the heroku_deploy rake task:
+
+ rake heroku_deploy COMMENT="This is a comment describing what changed since the last release"
+
+If the deploy went horribly wrong and you need to do a rollback you can do so:
+
+ rake heroku_deploy:rollback
+
+In order to see the changelog:
+
+ rake heroku_deploy:log
+
+To examine git commits since the last release you can do:
+
+ rake heroku_deploy:pending
+
+== TODO
+
+It seems Heroku {is working on}[http://github.com/adamwiggins/heroku-releases] incorporating rollback functionality into the heroku command. Something to look into...
+
+== Credit
+
+This gem was inspired by
+{this gist}[http://gist.github.com/raw/307543/c762d1cb136588fb76edff907d65bbf80a1e254e/deploy.rake].
