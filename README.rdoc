@@ -7,33 +7,34 @@ Simple RubyGem for tagging and deploying versioned releases of an application to
 If you are using Bundler, add a gem dependency like this:
 
  group :development, :test do
-   gem 'heroku_deploy', '~> version known to work'
+   gem 'heroku_release', '~> version known to work'
  end
 
 Require the Rake tasks in your Rakefile:
 
- require 'heroku_deploy/tasks'
+ require 'heroku_release/tasks'
 
-You have a few configuration options. If you are using a Git remote other than "heroku" then you must configure that. You can choose to have the release version written to a file on deploy so you can check the version on the live server. Here is an example:
+You have a few configuration options. If you are using a Git remote other than "heroku" then you must configure that. You can choose to have the release version written to a file on deploy so you can check the version on the live server. You can also choose to have a CHANGELOG file auto-generated. Here is a configuration example:
 
- HerokuDeploy.config.heroku_remote = "production" # git remote for heroku, defaults to "heroku"
- HerokuDeploy.config.version_file_path = "public/version"
+ HerokuRelease.config.heroku_remote = "production" # git remote for heroku, defaults to "heroku"
+ HerokuRelease.config.version_file_path = "public/version" # if not set no version file will be generated
+ HerokuRelease.config.changelog_path = "CHANGELOG" # if not set no changelog file will be generated
 
-To deploy the master branch to production, use the heroku_deploy rake task:
+To deploy the master branch to production, use the heroku_release rake task:
 
- rake heroku_deploy COMMENT="This is a comment describing what changed since the last release"
+ rake heroku_release COMMENT="This is a comment describing what changed since the last release"
 
 If the deploy went horribly wrong and you need to do a rollback you can do so:
 
- rake heroku_deploy:rollback
+ rake heroku_release:rollback
 
 In order to see the changelog:
 
- rake heroku_deploy:log
+ rake heroku_release:log
 
 To examine git commits since the last release you can do:
 
- rake heroku_deploy:pending
+ rake heroku_release:pending
 
 == TODO
 

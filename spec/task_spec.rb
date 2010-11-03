@@ -38,10 +38,7 @@ describe HerokuRelease::Task do
       ENV['COMMENT'] = "the comment"
       @task.expects(:get_release_name).returns("release-123")
       @task.expects(:commit_version_file).never
-      git = sequence('git')
-      @task.expects(:execute).with("git tag -a release-123 -m 'the comment'").in_sequence(git)
-      @task.expects(:execute).with("git push --tags origin").in_sequence(git)
-      @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)
+      expect_tag_created("release-123", "the comment")
 
       @task.tag
     end
@@ -51,12 +48,26 @@ describe HerokuRelease::Task do
       @config.version_file_path = "public/version"
       @task.expects(:get_release_name).returns("release-123")
       @task.expects(:commit_version_file).with("release-123")
-      git = sequence('git')
-      @task.expects(:execute).with("git tag -a release-123 -m 'Tagged release'").in_sequence(git)
-      @task.expects(:execute).with("git push --tags origin").in_sequence(git)
-      @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)
+      expect_tag_created("release-123")
 
       @task.tag
+    end
+    
+    it "commits changelog if changelog_path is set" do
+      @config.changelog_path = "spec/CHANGELOG"
+      @task.expects(:get_release_name).returns("release-123")
+      @task.expects(:commit_version_file).never
+      @task.expects(:commit_changelog)
+      expect_tag_created("release-123")
+      
+      @task.tag
+    end
+    
+    def expect_tag_created(release_name, comment = "Tagged release")
+      git = sequence('git')
+      @task.expects(:execute).with("git tag -a #{release_name} -m '#{comment}'").in_sequence(git)
+      @task.expects(:execute).with("git push --tags origin").in_sequence(git)
+      @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)      
     end
   end
 
@@ -203,6 +214,25 @@ release-20100926-173016
   describe "git_tags" do
     it "works" do
       @task.send(:git_tags)
+    end
+  end
+  
+  describe "commit_changelog" do
+    after(:each) do
+      FileUtils.rm_f(@config.changelog_path)
+    end
+    
+    it "writes changelog to changelog_path and commits it" do
+      @config.changelog_path = "spec/CHANGELOG"
+      @task.expects(:changelog).returns("the changelog")
+      git = sequence('git')
+      @task.expects(:execute).with("git add #{@config.changelog_path}").in_sequence(git)
+      @task.expects(:execute).with("git commit -m 'Updated #{@config.changelog_path}'").in_sequence(git)
+      @task.expects(:execute).with("git push origin master").in_sequence(git)
+      
+      @task.send(:commit_changelog)
+      
+      File.read(@config.changelog_path).should == (@task.send(:changelog_warning) + "the changelog")
     end
   end
 end

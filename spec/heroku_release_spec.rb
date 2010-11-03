@@ -27,6 +27,15 @@ describe HerokuRelease do
       config.version_file_path = "public/system/version"
       config.version_file_path.should == "public/system/version"
     end
+    
+    it "defaults changelog_path to nil" do
+      config.changelog_path.should be_nil
+    end
+    
+    it "can set changelog_path" do
+      config.changelog_path = "CHANGELOG"
+      config.changelog_path.should == "CHANGELOG"
+    end
   end
   
   def config
