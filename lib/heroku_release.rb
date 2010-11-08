@@ -2,7 +2,8 @@ require 'ostruct'
 
 module HerokuRelease
   @@config = OpenStruct.new(
-    :heroku_remote => "heroku"
+    :heroku_remote => "heroku",
+    :prompt_for_comments => false
   )
 
   def self.config
@@ -34,7 +35,7 @@ module HerokuRelease
     def tag
       release_name = get_release_name
       commit_version_file(release_name) if config.version_file_path
-      comment = ENV['COMMENT'] || 'Tagged release'
+      comment = tag_comment
       output "Tagging release as '#{release_name}' with comment '#{comment}'"
       execute "git tag -a #{release_name} -m '#{comment}'"
       execute "git push --tags origin"
@@ -82,10 +83,19 @@ module HerokuRelease
 
     private
 
+    def tag_comment
+      if config.prompt_for_comments and (ENV['COMMENT'].nil? or ENV['COMMENT'].strip == '')
+        print "Required - please enter a release comment: "
+        $stdin.gets.strip
+      else
+        ENV['COMMENT'] || 'Tagged release'
+      end
+    end
+
     def output(message)
       puts message
     end
-    
+
     def execute(command)
       output `#{command}`.strip
     end
@@ -143,7 +153,7 @@ module HerokuRelease
     def git_tags_with_comments
       `git tag -n`
     end
-    
+
     def config
       HerokuRelease.config
     end

@@ -42,6 +42,27 @@ describe HerokuRelease::Task do
 
       @task.tag
     end
+
+    it "prompts for a comment message if enforced" do
+      previous_value = HerokuRelease.config.prompt_for_comments
+      old_stdin = $stdin
+      $stdin = mock('stdin', :gets => "my custom stdin comment")
+
+      begin
+        HerokuRelease.config.prompt_for_comments = true
+        ENV['COMMENT'] = nil
+
+        @task.expects(:get_release_name).returns("release-prompt-123")
+        @task.expects(:commit_version_file).never
+
+        expect_tag_created("release-prompt-123", "my custom stdin comment")
+
+        @task.tag
+      ensure
+        HerokuRelease.config.prompt_for_comments = previous_value
+        $stdin = old_stdin
+      end
+    end
     
     it "commits version file if version_file_path is set" do
       ENV['COMMENT'] = nil
