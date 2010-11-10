@@ -5,6 +5,7 @@ describe HerokuRelease::Task do
   before(:each) do
     @task = HerokuRelease::Task.new
     @config = HerokuRelease.config
+    @config.prompt_for_comments = false
     @config_before = HerokuRelease.config.dup
   end
 

@@ -14,8 +14,8 @@ describe HerokuRelease do
       config.heroku_remote.should == "heroku"
     end
 
-    it "defaults prompting for comments to false" do
-      config.prompt_for_comments.should == false
+    it "defaults prompting for comments to true" do
+      config.prompt_for_comments.should == true
     end
     
     it "can set heroku_remote" do
