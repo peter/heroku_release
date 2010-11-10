@@ -13,6 +13,10 @@ describe HerokuRelease do
     it "defaults heroku_remote to heroku" do
       config.heroku_remote.should == "heroku"
     end
+
+    it "defaults prompting for comments to false" do
+      config.prompt_for_comments.should == false
+    end
     
     it "can set heroku_remote" do
       config.heroku_remote = "production"
