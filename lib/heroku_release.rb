@@ -70,9 +70,7 @@ module HerokuRelease
         output "Rolling back to '#{previous}' ..."
         execute "git push -f #{config.heroku_remote} #{previous}:master"
         output "Deleting rollbacked release '#{current}' ..."
-        execute "git tag -d #{current}"
-        execute "git push #{config.heroku_remote} :refs/tags/#{current}"
-        execute "git push origin :refs/tags/#{current}"
+        remove_tag(current)
         output 'Rollback completed'
       else
         output "No release tags found - cannot do rollback"
@@ -81,6 +79,12 @@ module HerokuRelease
     end
 
     private
+
+    def remove_tag(tag_name)
+      execute "git tag -d #{tag_name}"
+      execute "git push #{config.heroku_remote} :refs/tags/#{tag_name}"
+      execute "git push origin :refs/tags/#{tag_name}"
+    end
 
     def tag_comment
       return ENV['COMMENT'] if ENV['COMMENT']      
