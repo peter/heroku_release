@@ -36,10 +36,10 @@ describe HerokuRelease::Task do
 
   describe "tag" do
     it "create git tag with release name and comment and pushes it to origin and to heroku" do
-      ENV['COMMENT'] = "the comment"
+      ENV['COMMENT'] = "don't forget to comment"
       @task.expects(:get_release_name).returns("release-123")
       @task.expects(:commit_version_file).never
-      expect_tag_created("release-123", "the comment")
+      expect_tag_created("release-123", ENV['COMMENT'])
 
       @task.tag
     end
@@ -87,7 +87,8 @@ describe HerokuRelease::Task do
     
     def expect_tag_created(release_name, comment = "Tagged release")
       git = sequence('git')
-      @task.expects(:execute).with("git tag -a #{release_name} -m '#{comment}'").in_sequence(git)
+      quoted_comment = comment.gsub("'") { %q{'\''} }
+      @task.expects(:execute).with("git tag -a #{release_name} -m '#{quoted_comment}'").in_sequence(git)
       @task.expects(:execute).with("git push --tags origin").in_sequence(git)
       @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)      
     end

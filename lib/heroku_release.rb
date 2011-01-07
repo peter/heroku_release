@@ -36,7 +36,7 @@ module HerokuRelease
       release_name = get_release_name
       commit_version_file(release_name) if config.version_file_path
       output "Tagging release as '#{release_name}'"
-      execute "git tag -a #{release_name} -m '#{tag_comment}'"
+      execute "git tag -a #{release_name} -m '#{quoted_tag_comment}'"
       execute "git push --tags origin"
       execute "git push --tags #{config.heroku_remote}"
       commit_changelog if config.changelog_path
@@ -86,6 +86,10 @@ module HerokuRelease
       execute "git push origin :refs/tags/#{tag_name}"
     end
 
+    def quoted_tag_comment
+      tag_comment.gsub("'") { %q{'\''} } # quote single quotes
+    end
+
     def tag_comment
       return ENV['COMMENT'] if ENV['COMMENT']      
       if config.prompt_for_comments
@@ -130,10 +134,14 @@ module HerokuRelease
 
     def commit_changelog
       output "Committing #{config.changelog_path}"
-      File.open(config.changelog_path, "w") { |f| f.print(changelog_warning + changelog) }
+      write_changelog
       execute "git add #{config.changelog_path}"
       execute "git commit -m 'Updated #{config.changelog_path}'"
       execute "git push origin master"
+    end
+    
+    def write_changelog
+      File.open(config.changelog_path, "w") { |f| f.print(changelog_warning + changelog) }      
     end
 
     def changelog_warning
