@@ -36,6 +36,10 @@ To examine git commits since the last release you can do:
 
  rake heroku_release:pending
 
+== License
+
+This library is released under the MIT license.
+
 == TODO
 
 It seems Heroku {is working on}[http://github.com/adamwiggins/heroku-releases] incorporating rollback functionality into the heroku command. Something to look into...
