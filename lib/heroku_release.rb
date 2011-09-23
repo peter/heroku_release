@@ -34,12 +34,18 @@ module HerokuRelease
 
     def tag
       release_name = get_release_name
-      commit_version_file(release_name) if config.version_file_path
+      quoted_tag_comment = single_quote(tag_comment)
+
       output "Tagging release as '#{release_name}'"
       execute "git tag -a #{release_name} -m '#{quoted_tag_comment}'"
       execute "git push --tags origin"
       execute "git push --tags #{config.heroku_remote}"
-      commit_changelog if config.changelog_path
+
+      if config.version_file_path || config.changelog_path
+        update_version_file(release_name) if config.version_file_path
+        update_changelog if config.changelog_path
+        commit(release_name, quoted_tag_comment)
+      end
     end
 
     def log
@@ -86,8 +92,8 @@ module HerokuRelease
       execute "git push origin :refs/tags/#{tag_name}"
     end
 
-    def quoted_tag_comment
-      tag_comment.gsub("'") { %q{'\''} } # quote single quotes
+    def single_quote(string)
+      string.gsub("'") { %q{'\''} } # quote single quotes
     end
 
     def tag_comment
@@ -124,20 +130,21 @@ module HerokuRelease
       end    
     end
 
-    def commit_version_file(release_name)
+    def update_version_file(release_name)
       output "Committing version file for release #{release_name}"
       File.open(config.version_file_path, "w") { |f| f.print release_name }
       execute "git add #{config.version_file_path}"
-      execute "git commit -m 'Updated version file to #{release_name}'"
-      execute "git push origin master"
     end
 
-    def commit_changelog
+    def update_changelog
       output "Committing #{config.changelog_path}"
       write_changelog
       execute "git add #{config.changelog_path}"
-      execute "git commit -m 'Updated #{config.changelog_path}'"
-      execute "git push origin master"
+    end
+    
+    def commit(release_name, quoted_tag_comment)
+      execute "git commit -m 'release #{release_name}: #{quoted_tag_comment}'"
+      execute "git push origin master"      
     end
     
     def write_changelog

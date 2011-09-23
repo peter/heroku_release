@@ -38,7 +38,7 @@ describe HerokuRelease::Task do
     it "create git tag with release name and comment and pushes it to origin and to heroku" do
       ENV['COMMENT'] = "don't forget to comment"
       @task.expects(:get_release_name).returns("release-123")
-      @task.expects(:commit_version_file).never
+      @task.expects(:update_version_file).never
       expect_tag_created("release-123", ENV['COMMENT'])
 
       @task.tag
@@ -54,7 +54,7 @@ describe HerokuRelease::Task do
         ENV['COMMENT'] = nil
 
         @task.expects(:get_release_name).returns("release-prompt-123")
-        @task.expects(:commit_version_file).never
+        @task.expects(:update_version_file).never
 
         expect_tag_created("release-prompt-123", "my custom stdin comment")
 
@@ -69,7 +69,8 @@ describe HerokuRelease::Task do
       ENV['COMMENT'] = nil
       @config.version_file_path = "public/version"
       @task.expects(:get_release_name).returns("release-123")
-      @task.expects(:commit_version_file).with("release-123")
+      @task.expects(:update_version_file).with("release-123")
+      @task.expects(:commit).with(is_a(String), is_a(String))
       expect_tag_created("release-123")
 
       @task.tag
@@ -78,8 +79,9 @@ describe HerokuRelease::Task do
     it "commits changelog if changelog_path is set" do
       @config.changelog_path = "spec/CHANGELOG"
       @task.expects(:get_release_name).returns("release-123")
-      @task.expects(:commit_version_file).never
-      @task.expects(:commit_changelog)
+      @task.expects(:update_version_file).never
+      @task.expects(:update_changelog)
+      @task.expects(:commit)
       expect_tag_created("release-123")
       
       @task.tag
@@ -192,7 +194,7 @@ Initial release
     end
   end
   
-  describe "commit_version_file(release_name)" do
+  describe "update_version_file(release_name)" do
     before(:each) do
       @path = "spec/version"      
     end
@@ -202,13 +204,10 @@ Initial release
     end
     
     it "writes release_name to version_file_path and commits that file" do
-      git = sequence('git')
-      @task.expects(:execute).with("git add #{@path}").in_sequence(git)
-      @task.expects(:execute).with("git commit -m 'Updated version file to release-123'").in_sequence(git)
-      @task.expects(:execute).with("git push origin master").in_sequence(git)
+      @task.expects(:execute).with("git add #{@path}")
 
       HerokuRelease.config.version_file_path = @path
-      @task.send(:commit_version_file, "release-123")
+      @task.send(:update_version_file, "release-123")
 
       File.read(@path).should == "release-123"
     end
@@ -240,7 +239,7 @@ release-20100926-173016
     end
   end
   
-  describe "commit_changelog" do
+  describe "update_changelog" do
     after(:each) do
       FileUtils.rm_f(@config.changelog_path)
     end
@@ -248,14 +247,20 @@ release-20100926-173016
     it "writes changelog to changelog_path and commits it" do
       @config.changelog_path = "spec/CHANGELOG"
       @task.expects(:changelog).returns("the changelog")
-      git = sequence('git')
-      @task.expects(:execute).with("git add #{@config.changelog_path}").in_sequence(git)
-      @task.expects(:execute).with("git commit -m 'Updated #{@config.changelog_path}'").in_sequence(git)
-      @task.expects(:execute).with("git push origin master").in_sequence(git)
+      @task.expects(:execute).with("git add #{@config.changelog_path}")
       
-      @task.send(:commit_changelog)
+      @task.send(:update_changelog)
       
       File.read(@config.changelog_path).should == (@task.send(:changelog_warning) + "the changelog")
+    end
+  end
+  
+  describe "commit" do
+    it "does a commit followed by a push to origin" do
+      git = sequence('git')
+      @task.expects(:execute).with(regexp_matches(/git commit/)).in_sequence(git)
+      @task.expects(:execute).with(regexp_matches(/git push/)).in_sequence(git)      
+      @task.send(:commit, "test-release-name", "test tag comment")
     end
   end
 end
