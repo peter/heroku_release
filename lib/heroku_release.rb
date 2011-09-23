@@ -143,7 +143,7 @@ module HerokuRelease
     end
     
     def commit(release_name, quoted_tag_comment)
-      execute "git commit -m 'release #{release_name}: #{quoted_tag_comment}'"
+      execute "git commit -m '#{release_name}: #{quoted_tag_comment}'"
       execute "git push origin master"      
     end
     
