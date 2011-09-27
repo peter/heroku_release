@@ -249,9 +249,24 @@ release-20100926-173016
       @task.expects(:changelog).returns("the changelog")
       @task.expects(:execute).with("git add #{@config.changelog_path}")
       
-      @task.send(:update_changelog)
+      @task.send(:update_changelog, "release-next", "Next release")
       
       File.read(@config.changelog_path).should == (@task.send(:changelog_warning) + "the changelog")
+    end
+  end
+
+  describe "changelog_entries" do
+    before(:each) do
+      @git_tags_with_comments = <<-END
+        release-20110923-132407 First release
+        release-20110927-082753 Second release
+        release-20110927-083744 Third release
+      END
+    end
+    
+    it "should return an array with release tags and comments in reverse chronological order" do
+      @task.expects(:git_tags_with_comments).returns(@git_tags_with_comments)
+      @task.send(:changelog_entries).should == [["release-20110927-083744", "Third release"], ["release-20110927-082753", "Second release"], ["release-20110923-132407", "First release"]]
     end
   end
   
