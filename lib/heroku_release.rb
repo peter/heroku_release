@@ -36,16 +36,22 @@ module HerokuRelease
       release_name = get_release_name
       quoted_tag_comment = single_quote(tag_comment)
 
+      if config.version_file_path || config.changelog_path
+        if config.version_file_path
+          output "Updating version file at #{config.version_file_path}"
+          update_version_file(release_name)
+        end
+        if config.changelog_path
+          output "Updating #{config.changelog_path}"
+          update_changelog
+        end
+        commit(release_name, quoted_tag_comment)
+      end
+
       output "Tagging release as '#{release_name}'"
       execute "git tag -a #{release_name} -m '#{quoted_tag_comment}'"
       execute "git push --tags origin"
       execute "git push --tags #{config.heroku_remote}"
-
-      if config.version_file_path || config.changelog_path
-        update_version_file(release_name) if config.version_file_path
-        update_changelog if config.changelog_path
-        commit(release_name, quoted_tag_comment)
-      end
     end
 
     def log
@@ -75,7 +81,7 @@ module HerokuRelease
       if previous
         output "Rolling back to '#{previous}' ..."
         execute "git push -f #{config.heroku_remote} #{previous}:master"
-        output "Deleting rollbacked release '#{current}' ..."
+        output "Removing rolled back release tag '#{current}' ..."
         remove_tag(current)
         output 'Rollback completed'
       else
@@ -131,13 +137,11 @@ module HerokuRelease
     end
 
     def update_version_file(release_name)
-      output "Committing version file for release #{release_name}"
       File.open(config.version_file_path, "w") { |f| f.print release_name }
       execute "git add #{config.version_file_path}"
     end
 
     def update_changelog
-      output "Committing #{config.changelog_path}"
       write_changelog
       execute "git add #{config.changelog_path}"
     end
