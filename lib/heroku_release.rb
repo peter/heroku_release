@@ -34,6 +34,7 @@ module HerokuRelease
 
     def tag
       release_name = get_release_name
+      tag_comment = get_tag_comment
       quoted_tag_comment = single_quote(tag_comment)
 
       if config.version_file_path || config.changelog_path
@@ -102,7 +103,7 @@ module HerokuRelease
       string.gsub("'") { %q{'\''} } # quote single quotes
     end
 
-    def tag_comment
+    def get_tag_comment
       return ENV['COMMENT'] if ENV['COMMENT']      
       if config.prompt_for_comments
         print "Required - please enter a release comment: "

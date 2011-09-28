@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.2.4 (Sep 27 2011)
+
+* Bugfix: we would prompt twice for tag comment if it was not in an environment variable
+
 # 0.2.3 (Sep 27 2011)
 
 * Bugfix: The changelog file was missing the current release, it needs to include the tag that has not been added yet. The heroku_release:log was correct though. I considered removing the CHANGELOG file altogether to simplify things but I'm keeping it around since I like it (unfortunately the code is getting smelly now - refactoring needed).
