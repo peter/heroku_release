@@ -3,7 +3,8 @@ require 'ostruct'
 module HerokuRelease
   @@config = OpenStruct.new(
     :heroku_remote => "heroku",
-    :prompt_for_comments => true
+    :prompt_for_comments => true,
+    :branch => "master"
   )
 
   def self.config
@@ -13,7 +14,7 @@ module HerokuRelease
   def self.config=(config)
     @@config = config
   end
-  
+
   class Task
     def self.tasks
       {
@@ -24,12 +25,12 @@ module HerokuRelease
         :previous_release => "Show version of previous release",
         :pending => "Show git commits since last released version",
         :rollback => "Rollback to previous release and remove current release tag"
-      }      
+      }
     end
-    
+
     def push
-      output 'Deploying site to Heroku ...'
-      execute "git push #{config.heroku_remote} master"
+      output "Deploying branch #{branch} to Heroku ..."
+      execute "git push #{config.heroku_remote} #{branch}:master"
     end
 
     def tag
@@ -104,13 +105,18 @@ module HerokuRelease
     end
 
     def get_tag_comment
-      return ENV['COMMENT'] if ENV['COMMENT']      
+      return ENV['COMMENT'] if ENV['COMMENT']
       if config.prompt_for_comments
         print "Required - please enter a release comment: "
         $stdin.gets.strip
       else
         'Tagged release'
       end
+    end
+
+    def branch
+      return ENV['BRANCH'] if ENV['BRANCH']
+      config.branch
     end
 
     def output(message)
@@ -134,7 +140,7 @@ module HerokuRelease
         previous
       else
         nil
-      end    
+      end
     end
 
     def update_version_file(release_name)
@@ -146,12 +152,12 @@ module HerokuRelease
       write_changelog(release_name, tag_comment)
       execute "git add #{config.changelog_path}"
     end
-    
+
     def commit(release_name, quoted_tag_comment)
       execute "git commit -m '#{release_name}: #{quoted_tag_comment}'"
-      execute "git push origin master"      
+      execute "git push origin master"
     end
-    
+
     def write_changelog(release_name, tag_comment)
       changelog_entries_with_next = [[release_name, tag_comment]] + changelog_entries
       File.open(config.changelog_path, "w") { |f| f.print(changelog_warning + changelog(changelog_entries_with_next)) }

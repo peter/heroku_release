@@ -19,10 +19,14 @@ You have a few configuration options. If you are using a Git remote other than "
  HerokuRelease.config.heroku_remote = "production" # git remote for heroku, defaults to "heroku"
  HerokuRelease.config.version_file_path = "public/version" # if not set no version file will be generated
  HerokuRelease.config.changelog_path = "CHANGELOG" # if not set no changelog file will be generated
+ HerokuRelease.config.branch = 'production' # defaults to 'master'
 
 To deploy the master branch to production, use the heroku_release rake task:
 
  rake heroku_release COMMENT="This is a comment describing what changed since the last release"
+
+To deploy another branch to production, send the BRANCH env variable:
+ rake heroku_release BRANCH="production_branch"
 
 If the deploy went horribly wrong and you need to do a rollback you can do so:
 
