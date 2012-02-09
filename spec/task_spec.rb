@@ -12,24 +12,32 @@ describe HerokuRelease::Task do
   after(:each) do
     HerokuRelease.config = @config_before
   end
-  
+
   describe "tasks" do
     it "is a Hash" do
       HerokuRelease::Task.tasks.is_a?(Hash).should be_true
     end
-    
+
     it "corresponds to public instance methods" do
-      HerokuRelease::Task.tasks.keys.map(&:to_s).sort.should == task_instance_methods      
+      HerokuRelease::Task.tasks.keys.map(&:to_s).sort.should == task_instance_methods
     end
-    
+
     def task_instance_methods
       HerokuRelease::Task.public_instance_methods(false).map(&:to_s).sort
     end
   end
-  
+
   describe "push" do
-    it "should execute a git push to heroku remote" do
-      @task.expects(:execute).with("git push #{@config.heroku_remote} master")
+    it "should execute a git push to heroku remote with the branch set in config" do
+      @config.branch = 'production'
+
+      @task.expects(:execute).with("git push #{@config.heroku_remote} #{@config.branch}:master")
+      @task.push
+    end
+
+    it "should execute a git push to heroku remote with the branch set as ENV['BRANCH']" do
+      ENV['BRANCH'] = 'other_branch'
+      @task.expects(:execute).with("git push #{@config.heroku_remote} #{ENV['BRANCH']}:master")
       @task.push
     end
   end
@@ -64,7 +72,7 @@ describe HerokuRelease::Task do
         $stdin = old_stdin
       end
     end
-    
+
     it "commits version file if version_file_path is set" do
       ENV['COMMENT'] = nil
       @config.version_file_path = "public/version"
@@ -75,7 +83,7 @@ describe HerokuRelease::Task do
 
       @task.tag
     end
-    
+
     it "commits changelog if changelog_path is set" do
       @config.changelog_path = "spec/CHANGELOG"
       @task.expects(:get_release_name).returns("release-123")
@@ -83,16 +91,16 @@ describe HerokuRelease::Task do
       @task.expects(:update_changelog)
       @task.expects(:commit)
       expect_tag_created("release-123")
-      
+
       @task.tag
     end
-    
+
     def expect_tag_created(release_name, comment = "Tagged release")
       git = sequence('git')
       quoted_comment = comment.gsub("'") { %q{'\''} }
       @task.expects(:execute).with("git tag -a #{release_name} -m '#{quoted_comment}'").in_sequence(git)
       @task.expects(:execute).with("git push --tags origin").in_sequence(git)
-      @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)      
+      @task.expects(:execute).with("git push --tags #{@config.heroku_remote}").in_sequence(git)
     end
   end
 
@@ -139,11 +147,11 @@ Initial release
       @task.expects(:output).with("release-20100922-115151")
       @task.previous_release
     end
-    
+
     it "says there is no previous release if there is none" do
       @task.stubs(:releases).returns(%w(release-20100922-122313))
       @task.expects(:output).with("no previous release found")
-      @task.previous_release      
+      @task.previous_release
     end
   end
 
@@ -164,7 +172,7 @@ Initial release
       @task.expects(:execute).with("git tag -d release-current").in_sequence(git)
       @task.expects(:execute).with("git push #{@config.heroku_remote} :refs/tags/release-current").in_sequence(git)
       @task.expects(:execute).with("git push origin :refs/tags/release-current").in_sequence(git)
-      
+
       @task.rollback
     end
   end
@@ -175,7 +183,7 @@ Initial release
       @task.send(:output, "a message")
     end
   end
-  
+
   describe "execute" do
     it "executes a command and outputs the result" do
       @task.expects(:output).with("foobar")
@@ -187,22 +195,22 @@ Initial release
       @task.send(:execute, "echo")
     end
   end
-      
+
   describe "get_release_name" do
     it "generates a timestamped tag name" do
       @task.send(:get_release_name).should =~ /release-\d\d\d\d\d\d\d\d-\d\d\d\d\d\d/
     end
   end
-  
+
   describe "update_version_file(release_name)" do
     before(:each) do
-      @path = "spec/version"      
+      @path = "spec/version"
     end
-    
+
     after(:each) do
       FileUtils.rm_f(@path)
     end
-    
+
     it "writes release_name to version_file_path and commits that file" do
       @task.expects(:execute).with("git add #{@path}")
 
@@ -228,7 +236,7 @@ foobar
 release-20100926-173016
       END
       )
-      
+
       @task.send(:releases).should == %w(release-20100922-115151 release-20100922-122313 release-20100926-173016)
     end
   end
@@ -238,19 +246,19 @@ release-20100926-173016
       @task.send(:git_tags)
     end
   end
-  
+
   describe "update_changelog" do
     after(:each) do
       FileUtils.rm_f(@config.changelog_path)
     end
-    
+
     it "writes changelog to changelog_path and commits it" do
       @config.changelog_path = "spec/CHANGELOG"
       @task.expects(:changelog).returns("the changelog")
       @task.expects(:execute).with("git add #{@config.changelog_path}")
-      
+
       @task.send(:update_changelog, "release-next", "Next release")
-      
+
       File.read(@config.changelog_path).should == (@task.send(:changelog_warning) + "the changelog")
     end
   end
@@ -263,18 +271,18 @@ release-20100926-173016
         release-20110927-083744 Third release
       END
     end
-    
+
     it "should return an array with release tags and comments in reverse chronological order" do
       @task.expects(:git_tags_with_comments).returns(@git_tags_with_comments)
       @task.send(:changelog_entries).should == [["release-20110927-083744", "Third release"], ["release-20110927-082753", "Second release"], ["release-20110923-132407", "First release"]]
     end
   end
-  
+
   describe "commit" do
     it "does a commit followed by a push to origin" do
       git = sequence('git')
       @task.expects(:execute).with(regexp_matches(/git commit/)).in_sequence(git)
-      @task.expects(:execute).with(regexp_matches(/git push/)).in_sequence(git)      
+      @task.expects(:execute).with(regexp_matches(/git push/)).in_sequence(git)
       @task.send(:commit, "test-release-name", "test tag comment")
     end
   end
